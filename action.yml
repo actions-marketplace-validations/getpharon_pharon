@@ -1,0 +1,45 @@
+name: Pharon
+description: Keep your Pharon stack inventory fresh from CI and check pull requests for components with an open security incident. Only the inventory leaves the runner, never your code.
+branding:
+  icon: alert-triangle
+  color: orange
+
+inputs:
+  token:
+    description: Pharon CI token for this project (web app → Project → CI). Store it as a secret.
+    required: true
+  api-url:
+    description: Pharon server
+    default: https://getpharon.com
+  fail-on:
+    description: On pull requests, fail when the PR introduces a matched component at this severity or above (critical, high, medium, low, never)
+    default: high
+  comment:
+    description: On pull requests, keep one Pharon comment up to date (needs `pull-requests: write`)
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Pharon
+      shell: bash
+      env:
+        PHARON_TOKEN: ${{ inputs.token }}
+        PHARON_API_URL: ${{ inputs.api-url }}
+        PHARON_HOME: ${{ runner.temp }}/pharon
+        GITHUB_TOKEN: ${{ github.token }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        COMMENT: ${{ inputs.comment }}
+      run: |
+        cli="node $GITHUB_ACTION_PATH/pharon-plugin/bin/pharon"
+        if [ -z "$PHARON_TOKEN" ]; then
+          # Pull requests from forks don't get repository secrets: skip instead of failing the contributor's PR.
+          echo "::notice title=Pharon::Skipped: no Pharon token available (pull request from a fork?)."
+          exit 0
+        fi
+        # pull_request only: never pull_request_target, which would expose the token to fork PRs.
+        case "$GITHUB_EVENT_NAME" in
+          pull_request) $cli ci check --fail-on "$FAIL_ON" $([ "$COMMENT" = "true" ] && echo --comment) ;;
+          push|schedule|workflow_dispatch) $cli ci sync ;;
+          *) echo "::notice title=Pharon::Nothing to do for '$GITHUB_EVENT_NAME' events." ;;
+        esac

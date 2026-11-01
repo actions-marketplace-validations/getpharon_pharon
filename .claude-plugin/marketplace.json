@@ -1,0 +1,12 @@
+{
+  "name": "pharon",
+  "owner": { "name": "Pharon" },
+  "description": "Pharon: the warning light for your stack.",
+  "plugins": [
+    {
+      "name": "pharon",
+      "source": "./pharon-plugin",
+      "description": "The warning light for your stack. Your code never leaves your machine."
+    }
+  ]
+}

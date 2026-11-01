@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+// CommonJS shim so `node bin/pharon` works on any Node >= 18 without a package "type" field.
+const [major] = process.versions.node.split(".").map(Number);
+if (major < 18) {
+  console.error("pharon needs Node.js 18 or newer.");
+  process.exit(process.argv.includes("--hook") || process.argv.some((a) => a.startsWith("--hook=")) ? 0 : 1);
+}
+import("../lib/cli.mjs").then((m) => m.main());
