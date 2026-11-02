@@ -42,6 +42,13 @@ jobs:
 
 Only an inventory: component names, versions and the paths of stack files. Source code, file contents and secret values never do, and `/pharon:show` prints the exact upload. Redaction rules can drop or hash internal names first. Every incident notice is signed with Ed25519; the CLI rejects unsigned or tampered notices and never runs anything from one. Details: [what we see](https://getpharon.com/what-we-see).
 
+**Where data goes:**
+- **getpharon.com**, Pharon's API, and nowhere else. The plugin's commands and its session start and end hooks upload the inventory there, along with the repo's git remote (as the project's identity), hashed cloud account ids and the machine's name as the label of the CLI login. They download signed incident notices from the same API.
+- **api.github.com**, only from the GitHub Action, to comment on the pull request with the repository's own token.
+- **Your cloud provider**, only if you turn on cloud scanning: Pharon runs your own `aws`, `gcloud` or `az` CLI with an allowlist of read-only describe and list commands. Those calls go from your machine to your provider, as they would if you ran them yourself.
+
+The current inventory is kept while the project exists; inventory history for 30 to 365 days (90 by default), as each organization chooses. Details: [privacy policy](https://getpharon.com/privacy).
+
 ## Links
 
 - [Security notices](https://getpharon.com/notices): compromised packages, exploited vulnerabilities, vendor breaches and end-of-life deadlines
