@@ -20,7 +20,7 @@ const fixtures = {
   ] }] },
   "rds describe-db-instances@eu-west-1": { DBInstances: [{ DBInstanceArn: "arn:aws:rds:eu-west-1:123456789012:db:main", Engine: "postgres", EngineVersion: "15.4" }, { DBInstanceArn: "arn:x:member", DBClusterIdentifier: "c1", Engine: "aurora-postgresql", EngineVersion: "16.1" }] },
   "rds describe-db-clusters@eu-west-1": { DBClusters: [{ DBClusterArn: "arn:aws:rds:eu-west-1:123456789012:cluster:c1", Engine: "aurora-postgresql", EngineVersion: "16.1" }] },
-  "lambda list-functions@eu-west-1": { Functions: [{ FunctionArn: "arn:aws:lambda:eu-west-1:123456789012:function:a", Runtime: "nodejs20.x", Environment: { Variables: { OPENAI_API_KEY: "sk-live-secret" } } }, { FunctionArn: "arn:b", Runtime: "python3.12" }] },
+  "lambda list-functions@eu-west-1": { Functions: [{ FunctionArn: "arn:aws:lambda:eu-west-1:123456789012:function:a", Runtime: "nodejs20.x", Environment: { Variables: { OPENAI_API_KEY: "example-openai-key" } } }, { FunctionArn: "arn:b", Runtime: "python3.12" }] },
   "eks list-clusters@us-east-1": { clusters: ["prod"] },
   "eks describe-cluster@us-east-1": { cluster: { arn: "arn:aws:eks:us-east-1:123456789012:cluster/prod", version: "1.29" } },
   "ecs list-clusters@eu-west-1": { clusterArns: ["arn:ecs:cluster/c"] },
@@ -66,7 +66,7 @@ test("scanAws: discovery via Cost Explorer, versions via describe calls, denials
   assert.ok(!json.includes("123456789012") && !json.includes("arn:"), "no raw account ids or ARNs on cloud resources");
   const calls = readFileSync(log, "utf8");
   assert.match(calls, /lambda list-functions .*--query \{Functions: Functions\[\]\.\{FunctionArn: FunctionArn, Runtime: Runtime\}\}/, "env vars filtered inside the aws process");
-  assert.ok(!JSON.stringify(r).includes("sk-live-secret"));
+  assert.ok(!JSON.stringify(r).includes("example-openai-key"));
   assert.ok(calls.includes("opensearch list-domain-names"), "services at $0 (free tier, credits) are still scanned");
   assert.deepEqual(r.failed, []);
 });
