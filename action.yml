@@ -1,4 +1,4 @@
-name: Pharon
+name: Pharon Stack Check
 description: Keep your Pharon stack inventory fresh from CI and check pull requests for components with an open security incident. Only the inventory leaves the runner, never your code.
 branding:
   icon: alert-triangle
