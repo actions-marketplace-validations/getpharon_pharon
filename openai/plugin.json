@@ -1,0 +1,36 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pharon",
+  "version": "0.1.0",
+  "description": "The warning light for your stack: keeps a local inventory of your packages, runtimes, images, CI actions and services fresh, and checks incidents locally. Your code never leaves your machine.",
+  "author": { "name": "Pharon", "url": "https://getpharon.com" },
+  "homepage": "https://getpharon.com",
+  "repository": "https://github.com/getpharon/pharon",
+  "license": "Apache-2.0",
+  "keywords": ["security", "supply-chain", "vulnerabilities", "end-of-life", "inventory"],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "onboardingSkill": "./skills/setup/SKILL.md",
+      "interface": {
+        "displayName": "Pharon",
+        "shortDescription": "Warning light for your stack",
+        "longDescription": "Pharon keeps an inventory of every package, container image, GitHub Action, runtime and cloud service your repo uses, and alerts your team within minutes when a compromised release, an exploited vulnerability, a vendor breach or an end-of-life deadline reaches it.\n\nThe scan runs on your machine with the bundled pharon CLI (Node.js 18 or later). Only the inventory is uploaded to getpharon.com: component names, versions and the paths of stack files. Source code, file contents and secret values never leave your machine, and the show skill prints the exact upload before anything is sent. If you choose to, Pharon also reads your AWS, Google Cloud or Azure setup through your own CLI, limited to an allowlist of read-only calls. Incident notices are signed with Ed25519 and verified locally.\n\nSkills: setup (log in, link the repo, scan, review and confirm the first upload), status (last sync and open incidents), show (exactly what is uploaded) and check-incident (whether this machine is affected by an incident, and which secrets to rotate, by name only).\n\nThe inventory does not refresh on its own in Codex: run setup again after the stack changes, or add the Pharon GitHub Action to keep it current from CI. Requires a Pharon account, with a 7-day free trial.",
+        "developerName": "Gitmore",
+        "category": "Developer Tools",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://getpharon.com",
+        "supportURL": "https://getpharon.com/docs",
+        "privacyPolicyURL": "https://getpharon.com/privacy",
+        "termsOfServiceURL": "https://getpharon.com/terms",
+        "defaultPrompt": [
+          "Set up Pharon for this repo",
+          "Show exactly what Pharon uploads for this repo",
+          "Is this repo affected by an open Pharon incident?"
+        ],
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png"
+      }
+    }
+  }
+}

@@ -2,3 +2,4 @@
 pharon-plugin/lib/keys.local.mjs
 node_modules/
 .DS_Store
+dist/
