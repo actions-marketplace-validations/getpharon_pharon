@@ -530,8 +530,10 @@ async function services() {
     return console.log((ctx.link.inferred ?? []).map((s) => `${s.vendor} (${s.evidence.join(", ")})`).join("\n") || "No confirmed services.");
   }
   if (!["add", "remove"].includes(action) || !vendor) fail("Usage: pharon services add|remove <vendor-slug> [--evidence host:api.example.com] | list");
-  // Evidence is a pointer (hostname or file path), never a code excerpt.
-  const evidence = (opt.evidence ?? []).filter((e) => /^(host|file|doc):[\w.\/@:-]{1,200}$/.test(e));
+  // Evidence is a pointer (hostname or file path), never a code excerpt. Paths may hold route groups like app/(site)/[id].
+  const evidence = opt.evidence ?? [];
+  const bad = evidence.filter((e) => !/^(host|file|doc):[\w.\/@:()[\]+~-]{1,200}$/.test(e));
+  if (bad.length) fail(`Not a hostname or file path: ${bad.join(", ")}. Use host:api.example.com or file:path/to/file.`);
   if (action === "add" && !evidence.length) fail("Give at least one --evidence like host:api.anthropic.com or file:deploy/README.md");
   if (action === "add" && !ctx.link.confirmed) fail("Confirm the first upload first (`pharon sync --yes`): services are shared with the team.");
   await cfg.api(`/v1/projects/${ctx.link.project_id}/services`, { method: "PUT", body: { action, vendor, evidence } });
