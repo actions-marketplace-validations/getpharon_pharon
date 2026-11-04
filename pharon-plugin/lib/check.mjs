@@ -118,6 +118,48 @@ function installedChecks(root, stackFiles, affects, window, add) {
     }
 }
 
+/**
+ * Node runtimes present on this machine, read from directory names and `process.version` only.
+ * Node is never executed: NODE_OPTIONS can make even `node --version` load a file.
+ * shortcut: node alone. Other runtimes still compare only the version the repo declares;
+ * extend here when an incident needs python or go patch versions.
+ */
+function installedNodeVersions() {
+  const found = new Map(); // version -> { where, running }
+  const note = (v, where, running = false) => {
+    const version = String(v).replace(/^v/, "").replace(/_\d+$/, ""); // homebrew keeps a revision: node/22.9.0_1
+    if (!/^\d+\.\d+\.\d+$/.test(version)) return;
+    if (!found.has(version) || running) found.set(version, { where, running });
+  };
+  note(process.version, `on your PATH (${rel(process.execPath)})`, true); // bin/pharon runs under `env node`
+  for (const [base, pattern] of [
+    [HOME, ".nvm/versions/node/*"],
+    [HOME, ".fnm/node-versions/*"],
+    [HOME, ".volta/tools/image/node/*"],
+    [HOME, ".asdf/installs/nodejs/*"],
+    ["/opt/homebrew", "Cellar/node*/*"],
+    ["/usr/local", "Cellar/node*/*"],
+  ])
+    for (const dir of expand(base, pattern)) note(path.basename(dir), `installed at ${rel(dir)}`);
+  return found;
+}
+
+/** Compare a runtime incident with the versions really installed, not just the range the repo declares. */
+function runtimeChecks(affects, add) {
+  const node = affects.filter((a) => a.kind === "runtime" && String(a.name).toLowerCase() === "node");
+  if (!node.length) return;
+  for (const [version, { where, running }] of installedNodeVersions())
+    for (const a of node) {
+      const level = componentLevel({ type: "runtime", name: "node", version }, a);
+      if (!level) continue;
+      const verdict = LEVEL_TO_VERDICT[level];
+      // A version you are not running is only "you could switch to it", so it never reads as confirmed.
+      // And a version that is not affected is worth a line only for the one you are actually on.
+      if (!running && verdict !== "confirmed") continue;
+      add(`runtime: node ${version}`, "environment", running ? verdict : "likely", `node ${version} ${where}`);
+    }
+}
+
 /** Indicator files: existence only. Pattern roots: site-packages/, node_modules/, ~/, otherwise repo-relative. */
 function indicatorChecks(root, stackFiles, files, add) {
   for (const f of files ?? []) {
@@ -309,6 +351,7 @@ export function runCheck(root, doc, keyId, services = []) {
     }
   historyChecks(root, affects, window, add);
   installedChecks(root, stackFiles, affects, window, add);
+  runtimeChecks(affects, add);
   indicatorChecks(root, stackFiles, doc.indicators?.files, add);
   cacheChecks(root, affects, add, manual);
   dockerChecks(affects, add, manual);

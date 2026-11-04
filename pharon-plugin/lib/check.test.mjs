@@ -86,3 +86,28 @@ test("runCheck: a service the team confirmed in setup counts, though no file sca
   assert.equal(r.verdict, "likely");
   assert.equal(r.rotate_now, true);
 });
+
+test("runCheck: a runtime incident is compared with the node really installed, not the declared range", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "pharon-check-"));
+  // The repo declares a range, which on its own can only ever be "likely".
+  writeFileSync(path.join(root, "package.json"), JSON.stringify({ engines: { node: `${process.versions.node.split(".")[0]}.x` } }));
+  const running = process.versions.node;
+  const [maj, min, patch] = running.split(".").map(Number);
+  const check = (ranges) => runCheck(root, { affects: [{ kind: "runtime", name: "node", ranges }] }, "k");
+
+  // The running version is inside the affected range, so the real version settles it.
+  const hit = check([{ fixed: `${maj}.${min}.${patch + 1}` }]);
+  assert.equal(hit.verdict, "confirmed");
+  const found = hit.locations.find((l) => l.label === `runtime: node ${running}`);
+  assert.equal(found.verdict, "confirmed");
+  assert.match(found.evidence[0], /on your PATH/);
+  // Other versions on disk are not being run, so none of them may read as confirmed.
+  for (const l of hit.locations.filter((l) => l.label.startsWith("runtime: node ") && l !== found)) assert.equal(l.verdict, "likely");
+
+  // Nothing on this machine is affected: the declared range must not leave it stuck at "likely".
+  assert.equal(check([{ introduced: "999.0.0" }]).verdict, "not_affected");
+
+  // An incident for another runtime must not pick up node at all.
+  const other = runCheck(root, { affects: [{ kind: "runtime", name: "python", ranges: [{ fixed: "99.0.0" }] }] }, "k");
+  assert.ok(other.locations.every((l) => !l.label.startsWith("runtime: node")));
+});
