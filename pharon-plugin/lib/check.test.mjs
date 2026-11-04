@@ -77,3 +77,12 @@ test("docker: local images are matched by repository and tag (fake docker on PAT
     process.env.PATH = PATH;
   }
 });
+
+test("runCheck: a service the team confirmed in setup counts, though no file scan finds it", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "pharon-check-"));
+  const doc = { affects: [{ kind: "service", vendor: "northflank" }], targets: ["environment_variables"] };
+  assert.equal(runCheck(root, doc, "k").verdict, "not_affected");
+  const r = runCheck(root, doc, "k", [{ vendor: "northflank", evidence: ["file:northflank.json"] }]);
+  assert.equal(r.verdict, "likely");
+  assert.equal(r.rotate_now, true);
+});

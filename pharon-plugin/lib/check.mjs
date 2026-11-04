@@ -283,8 +283,11 @@ function describe(c, level) {
   return `${c.name} ${c.version_spec || "(any version)"}${level === "likely" ? " is a loose range that could resolve to an affected version" : ""}`;
 }
 
-/** Run every check for one verified incident. Returns plain JSON for the check-incident skill. */
-export function runCheck(root, doc, keyId) {
+/**
+ * Run every check for one verified incident. Returns plain JSON for the check-incident skill. `services` are the ones
+ * the team confirmed in setup (link.inferred): no file scan finds them, but the dashboard matches them.
+ */
+export function runCheck(root, doc, keyId, services = []) {
   ROOT = root;
   const affects = doc.affects ?? [];
   const window = doc.exposure_window;
@@ -298,7 +301,8 @@ export function runCheck(root, doc, keyId) {
   };
 
   const stackFiles = listStackFiles(root);
-  for (const c of detect(readStack(root, stackFiles)).components)
+  const confirmed = services.map((s) => ({ type: "service", vendor: s.vendor, evidence: s.evidence ?? [], locations: ["services confirmed in setup"] }));
+  for (const c of [...detect(readStack(root, stackFiles)).components, ...confirmed])
     for (const a of affects) {
       const level = componentLevel(c, a);
       if (level) add(`repo: ${c.locations?.[0] ?? "service mapping"}`, "repo", LEVEL_TO_VERDICT[level], describe(c, level));

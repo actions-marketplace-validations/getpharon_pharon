@@ -468,7 +468,8 @@ async function check() {
   cfg.writeJson(seenPath, { ...seen, [id]: doc.updated_at });
   await loadServiceMap();
   const ctx = context();
-  const result = runCheck(ctx.root, doc, keyId);
+  if (ctx.link) await fetchProject(ctx).catch(() => {}); // services a teammate confirmed since; the saved list otherwise
+  const result = runCheck(ctx.root, doc, keyId, ctx.link?.inferred ?? []);
   if (opt.report) {
     // Only verdicts, location labels and secret NAMES are shared (spec §13.6); evidence stays here.
     if (!ctx.link) fail("Link the repo first (/pharon:setup) to share a verdict with the team.");
