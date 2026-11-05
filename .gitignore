@@ -1,5 +1,6 @@
 # Developer-only trusted keys (a local dev server's feed key): never published. See pharon-plugin/lib/keys.mjs.
 pharon-plugin/lib/keys.local.mjs
 node_modules/
+pharon-plugin/.claude-plugin/types/
 .DS_Store
 dist/

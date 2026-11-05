@@ -1,9 +1,0 @@
-{
-  "name": "pharon-lamp",
-  "version": "0.1.0",
-  "description": "Pharon's warning light in the status line: open security notices for this repo, read from the cache Pharon already keeps.",
-  "author": {
-    "name": "Pharon"
-  },
-  "license": "Apache-2.0"
-}
