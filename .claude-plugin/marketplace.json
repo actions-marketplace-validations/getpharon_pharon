@@ -7,6 +7,11 @@
       "name": "pharon",
       "source": "./pharon-plugin",
       "description": "The warning light for your stack. Your code never leaves your machine."
+    },
+    {
+      "name": "pharon-lamp",
+      "source": "./pharon-lamp",
+      "description": "Pharon's warning light in the Claude Code status line, with a pop-up when a new critical or high notice affects this repo. Needs the pharon plugin."
     }
   ]
 }

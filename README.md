@@ -22,6 +22,16 @@ Then open Claude Code in a repository and run `/pharon:setup`. It logs you in, l
 
 Full guide: [getpharon.com/docs](https://getpharon.com/docs).
 
+### The warning light in your status line (optional)
+
+`pharon-lamp` puts this repo's open Pharon notices in Claude Code's status line, as `🔦 high · 2 open`, and pops up a notice when a new critical or high one arrives. It reads the notices the `pharon` plugin already caches on your machine, so it makes no network calls of its own.
+
+```
+/plugin install pharon-lamp@pharon
+```
+
+It is built on Claude Code's plugin hooks modules, an early-access API, so it needs a recent Claude Code.
+
 ## GitHub Action
 
 Keeps the inventory current from CI and checks pull requests for components with an open incident. Create a CI token on the project page in Pharon, store it as the secret `PHARON_TOKEN`, and add:
