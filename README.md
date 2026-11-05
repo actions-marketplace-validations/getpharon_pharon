@@ -59,6 +59,6 @@ The current inventory is kept while the project exists; inventory history for 30
 
 - [Security notices](https://getpharon.com/notices): compromised packages, exploited vulnerabilities, vendor breaches and end-of-life deadlines
 - [Pricing](https://getpharon.com/pricing)
-- Support: support@gitmore.io
+- Support: contact@getpharon.com
 
 Pharon is part of [Gitmore](https://gitmore.io). The code in this repository is licensed under the [Apache License 2.0](LICENSE).

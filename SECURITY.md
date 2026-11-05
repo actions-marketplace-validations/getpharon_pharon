@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report security issues privately by email to support@gitmore.io, with "Security" in the subject line. Don't open a public issue. Say what is affected (the `pharon` CLI, the Claude Code plugin, the GitHub Action or getpharon.com), how to reproduce it and the impact you see. We'll confirm we received it and keep you updated until it is fixed.
+Please report security issues privately by email to contact@getpharon.com, with "Security" in the subject line. Don't open a public issue. Say what is affected (the `pharon` CLI, the Claude Code plugin, the GitHub Action or getpharon.com), how to reproduce it and the impact you see. We'll confirm we received it and keep you updated until it is fixed.
 
 ## Supported versions
 
