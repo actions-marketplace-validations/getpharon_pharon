@@ -4,11 +4,12 @@ import type { EngineInterface, Register } from 'claude-code'
  * Pharon's warning light.
  *
  * Pharon's CLI already fetches, caches and de-duplicates this repo's open notices
- * (~/.pharon/notices/<key>.json, refreshed by its SessionStart background run).
- * This mod only reads that file, so it adds no network call and no server change.
+ * (~/.pharon/notices/<key>.json). It writes that file at session start and never
+ * again, so this mod asks it to refetch on a timer; the fetching stays the CLI's.
  */
 
 const POLL_MS = 60_000
+const REFETCH_MS = 10 * 60_000 // the CLI's own NOTICE_TTL_MS
 const SEVERITY = ['critical', 'high', 'medium', 'low'] as const
 type Severity = (typeof SEVERITY)[number]
 type Notice = { id: string; kind: string; text: string }
@@ -52,6 +53,7 @@ export function newUrgent(notices: Notice[], seen: Set<string> | null): Notice[]
 }
 
 let cachePath: string | null = null
+let repoCwd = '.'
 let seen: Set<string> | null = null // null until the first read, so a session never opens with a burst of toasts
 
 async function run($: EngineInterface, argv: string[], cwd: string): Promise<string | null> {
@@ -71,6 +73,11 @@ async function findCache($: EngineInterface, cwd: string): Promise<string | null
   return rel ? `${home}/${rel}` : null
 }
 
+/** Ask the CLI to refetch this repo's notices into the cache. Fetching stays the CLI's job. */
+async function refetch($: EngineInterface): Promise<void> {
+  if (cachePath) await run($, [`${$.plugin.root}/bin/pharon`, 'notices'], repoCwd)
+}
+
 async function refresh($: EngineInterface): Promise<void> {
   if (!cachePath) return
   let notices: Notice[]
@@ -87,8 +94,12 @@ async function refresh($: EngineInterface): Promise<void> {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     cachePath = await findCache($, e.cwd)
+    repoCwd = e.cwd
     await refresh($)
     $.clock.every(POLL_MS, () => void refresh($))
+    // The CLI writes the cache at session start and never again, so ask it to refetch.
+    // First tick is one interval in, by which time its own SessionStart run has landed.
+    $.clock.every(REFETCH_MS, () => void refetch($))
     return next(e)
   })
 }

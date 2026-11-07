@@ -39,18 +39,22 @@ test('the line shows the worst severity and the total', () => {
 
 /** Drives the real hook: git + env + the cache file are answered as the engine would. */
 function engine(on: On, notices: unknown[] | null, status: (t?: string) => void, toast: (t: string) => void) {
-  on('process.run', (_: unknown, e: { argv: readonly string[] }) => ({
-    value: { exitCode: 0, stdout: e.argv.includes('--get') ? 'git@github.com:acme/api.git\n' : '/repo\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
-  }))
+  const ran: string[][] = []
+  const timers: number[] = []
+  on('process.run', (_: unknown, e: { argv: readonly string[] }) => {
+    ran.push([...e.argv])
+    return { value: { exitCode: 0, stdout: e.argv.includes('--get') ? 'git@github.com:acme/api.git\n' : '/repo\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
   on('env.get', (_: unknown, e: { name: string }) => ({ value: e.name === 'HOME' ? '/Users/me' : undefined }))
   on('fs.read', () => {
     if (notices === null) throw new Error('ENOENT') // repo not linked yet
     return { value: JSON.stringify({ fetched_at: 1, notices }) }
   })
-  on('clock.every', () => ({ value: undefined }))
+  on('clock.every', (_: unknown, e: { ms: number }) => { timers.push(e.ms); return { value: undefined } })
   on('ui.status', (_: unknown, e: { text?: string }) => { status(e.text); return { value: undefined } })
   on('ui.toast', (_: unknown, e: { text: string }) => { toast(e.text); return { value: undefined } })
   on('session.start', (_: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
+  return { ran, timers }
 }
 
 test('session start sets the line from the cache and toasts nothing', async ($, on) => {
@@ -81,4 +85,18 @@ test('only new critical or high notices interrupt', () => {
   expect(newUrgent([MEDIUM, HIGH], new Set([MEDIUM.id, HIGH.id]))).toEqual([]) // already shown: stays quiet
   expect(newUrgent([MEDIUM], new Set())).toEqual([]) // medium is never worth a toast
   expect(newUrgent([GAP], new Set())).toEqual([]) // nor is a gap, which carries no severity
+})
+
+test('the session polls the cache and asks the CLI to refetch it', async ($, on) => {
+  const { ran, timers } = engine(on, [MEDIUM], () => {}, () => {})
+
+  await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
+
+  // Two timers: re-read the file often, ask the CLI to refetch it rarely.
+  // In production the first tick of each is one interval in, so start itself shells out to nothing;
+  // this harness fires them at once, which is what lets us see the command below.
+  expect(timers).toEqual([60_000, 600_000])
+  // Fetching stays the CLI's: the mod runs its binary, in the repo, and reads the cache it writes.
+  const pharon = ran.find(argv => argv[0].endsWith('/bin/pharon'))
+  expect(pharon?.slice(1)).toEqual(['notices'])
 })
