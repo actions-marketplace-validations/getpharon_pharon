@@ -18,7 +18,7 @@ Then open Claude Code in a repository and run `/pharon:setup`. It logs you in, l
 | `/pharon:setup` | Connect a repo, or review and repair its setup |
 | `/pharon:status` | Last sync and open incidents for this repo |
 | `/pharon:show` | Exactly what is uploaded for this repo |
-| `/pharon:check-incident <id>` | Check whether this machine was affected, and which secrets to rotate |
+| `/pharon:check-incident <id>` | Check whether this machine was affected, and which secrets to rotate. Free, no account needed |
 
 Full guide: [getpharon.com/docs](https://getpharon.com/docs).
 

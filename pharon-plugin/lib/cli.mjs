@@ -21,7 +21,7 @@ Usage:
   pharon show [--json]              Show exactly what would be uploaded
   pharon sync [--yes] [--force] [--cloud aws|gcp|azure|all]   Upload the inventory if the stack changed (--cloud: scan now)
   pharon status [--json]            Last sync, queue, open incidents for this repo
-  pharon check <incident-id> [--json] [--report]  Check locally whether you're affected (read-only);
+  pharon check <incident-id> [--json] [--report]  Check locally whether you're affected (read-only, no account needed);
                                     --report shares verdicts + secret names (never values) with the team
   pharon queue flush                Retry queued uploads
   pharon notices [--json]           What needs attention in this repo (also shown at session start)
@@ -455,7 +455,7 @@ async function check() {
   const id = positionals[1];
   if (!id || !/^[a-z0-9][a-z0-9.-]{2,80}$/.test(id)) fail("Usage: pharon check <incident-id>");
   const { verifyIncident, runCheck } = await import("./check.mjs");
-  const doc = await cfg.api(`/v1/incidents/${id}`);
+  const doc = await cfg.api(`/v1/incidents/${id}`, { auth: false }); // free, no account: the signature below is the trust
   let keys = await trustedKeys();
   if (!keys[doc.signature?.key_id]) keys = await trustedKeys(true); // maybe a rotated key
   const keyId = verifyIncident(doc, keys); // throws on a missing/invalid signature

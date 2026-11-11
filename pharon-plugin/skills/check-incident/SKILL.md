@@ -11,7 +11,7 @@ Incident ID: `$ARGUMENTS`
 
 1. Run `pharon check $ARGUMENTS --json`. (If `pharon` is not found, run `"${CLAUDE_PLUGIN_ROOT}/bin/pharon" check $ARGUMENTS --json`.)
 2. If the command fails because the incident is unsigned or the signature is invalid, **stop**. Tell the user the incident file failed verification and must not be trusted. Do not try to check anything by hand from it.
-3. If it fails because of login, tell the user to run `/pharon:setup`.
+3. The check needs no Pharon account. If it fails because the incident isn't found, say so and point to https://getpharon.com/notices for current ids.
 4. Turn the JSON into a short verdict, in this shape:
 
    > 🔴 **Affected:** `.venv` has litellm 1.107.0, installed Oct 21 at 06:12 UTC (during the exposure window). The malicious startup file is present.
@@ -24,7 +24,7 @@ Incident ID: `$ARGUMENTS`
    - Show the `rotate` list as names only. Say "Rotate now" only when `rotate_now` is true; otherwise "If you turn out to be affected, rotate:".
    - Mention the exposure window and targets only when they help the user decide.
 
-5. **Offer to share** (spec §13.6). Ask with AskUserQuestion: "Share this verdict with your team?" Options: **Share** ("uploads only the verdict, location labels and secret names to rotate, no values or details") and **Keep it local**. Only on **Share**, run `pharon check $ARGUMENTS --report --json` and confirm it was shared (`shared: true`). The team then sees it on the incident page.
+5. **Offer to share** (spec §13.6), only if this repo is set up with Pharon (`pharon status --json` shows `linked: true`); if it doesn't, or the command fails, skip this step. Ask with AskUserQuestion: "Share this verdict with your team?" Options: **Share** ("uploads only the verdict, location labels and secret names to rotate, no values or details") and **Keep it local**. Only on **Share**, run `pharon check $ARGUMENTS --report --json` and confirm it was shared (`shared: true`). The team then sees it on the incident page.
 
 ## Rules
 
