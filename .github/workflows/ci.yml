@@ -18,5 +18,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+      - name: action.yml parses (GitHub ignores an Action whose metadata is invalid YAML)
+        run: ruby -ryaml -e 'YAML.load_file("action.yml")'
       - run: npm test
         working-directory: pharon-plugin

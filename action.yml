@@ -1,5 +1,5 @@
 name: Pharon Stack Check
-description: Keep your Pharon stack inventory fresh from CI and check pull requests for components with an open security incident. Only the inventory leaves the runner, never your code.
+description: Keep your Pharon stack inventory fresh from CI and flag pull requests that add a component with an open security incident.
 branding:
   icon: alert-triangle
   color: orange
@@ -15,7 +15,7 @@ inputs:
     description: On pull requests, fail when the PR introduces a matched component at this severity or above (critical, high, medium, low, never)
     default: high
   comment:
-    description: On pull requests, keep one Pharon comment up to date (needs `pull-requests: write`)
+    description: "On pull requests, keep one Pharon comment up to date (needs `pull-requests: write`)"
     default: "true"
 
 runs:
