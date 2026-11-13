@@ -14,7 +14,7 @@ If `pharon` isn't on the PATH, use `"${CLAUDE_PLUGIN_ROOT}/bin/pharon"` instead.
 
 1. Run `pharon status --json` to see where things stand: `linked`, `confirmed`, `server_error`, `api`.
 2. **Login.** If `server_error` says the user isn't logged in, or the login expired or was revoked, run `pharon login` with a 10-minute timeout. Tell the user a browser tab opens and they should check the code matches, then approve. (Self-hosted or local server: `pharon login --api <url>`; the web app's onboarding page shows the URL.)
-3. **Link.** If `linked` is false, run `pharon link`. If it says there is no git remote, ask the user for a project name and run `pharon link --name "<name>"`.
+3. **Link.** If `linked` is false, run `pharon link`. If it says there is no git remote, or that a redaction rule matches the remote, ask the user for a project name and run `pharon link --name "<name>"`.
 4. **Scan.** Run `pharon show` (human summary) and `pharon show --json` (for your own analysis; don't paste the JSON to the user).
 5. **Find what the scan can't see** (AI enrichment). Look through the repo, read-only, for third-party services that aren't in the inventory's `service` components:
    - raw HTTP calls or SDK-less clients to known API hosts (`api.anthropic.com`, `api.openai.com`, `hooks.slack.com`, `api.stripe.com`, …)

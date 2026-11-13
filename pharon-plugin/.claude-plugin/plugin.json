@@ -1,6 +1,6 @@
 {
   "name": "pharon",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "The warning light for your stack: keeps a local inventory of your packages, runtimes, images, CI actions and services fresh, and checks incidents locally. Your code never leaves your machine.",
   "author": { "name": "Pharon" },
   "homepage": "https://getpharon.com",

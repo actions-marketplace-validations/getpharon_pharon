@@ -1,6 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { redact, validPattern } from "./redact.mjs";
+import { redact, redactBranch, ruleHits, validPattern } from "./redact.mjs";
+
+test("branches and remotes that a rule matches", () => {
+  const rules = [{ pattern: "*acme*", action: "drop" }];
+  const b = redactBranch("feature/acme-login", rules, "salt1");
+  assert.match(b, /^redacted-[0-9a-f]{12}$/, "a drop rule still hashes a branch");
+  assert.equal(redactBranch("feature/acme-login", rules, "salt1"), b, "stable, so branch == default branch still works");
+  assert.notEqual(redactBranch("feature/acme-login", rules, "salt2"), b, "salted per org");
+  assert.equal(redactBranch("main", rules, "salt1"), "main");
+  assert.equal(redactBranch("main", [], "salt1"), "main");
+  assert.ok(ruleHits("github.com/acme-corp/app", rules));
+  assert.ok(!ruleHits("github.com/other/app", rules));
+});
 
 const cs = [
   { type: "package", ecosystem: "npm", name: "@acme/billing-core", version: "1.0.0", purl: "pkg:npm/%40acme/billing-core@1.0.0", locations: ["package-lock.json"] },

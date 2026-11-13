@@ -1,6 +1,6 @@
 {
   "name": "pharon",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "The warning light for your stack. Local stack inventory and incident checks; your code never leaves your machine.",
   "bin": { "pharon": "bin/pharon" },
   "files": ["bin", "lib/*.mjs", "!lib/*.test.mjs"],

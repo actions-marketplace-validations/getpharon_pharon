@@ -16,6 +16,16 @@ export function safeSpec(spec) {
 }
 const bare = (location) => location.replace(/(:\d+|#.*)$/, ""); // "Dockerfile:3" -> "Dockerfile"
 
+/** True when any rule's glob matches a bare name such as a branch or a git remote. */
+export const ruleHits = (name, rules) => (rules ?? []).some((r) => validPattern(r.pattern) && globMatch(r.pattern, String(name)));
+
+/**
+ * A branch name that any rule matches (drop or hash: a branch can't be dropped) becomes a salted hash.
+ * The same name always gives the same hash, so "branch == default branch" still works on the server.
+ */
+export const redactBranch = (name, rules, salt = "") =>
+  name != null && ruleHits(name, rules) ? `redacted-${createHash("sha256").update(salt + name).digest("hex").slice(0, 12)}` : name;
+
 /**
  * A rule's glob matches a component's name (vendor for services) or one of its file paths.
  * "drop" removes the component. "hash" replaces a matching name with a salted hash and hides matching paths.

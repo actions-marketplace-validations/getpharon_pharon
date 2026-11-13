@@ -10,7 +10,7 @@ import { accountRef, awsStatus, otherTools, scanAws } from "./cloud.mjs";
 import { azureStatus, gcpStatus, scanAzure, scanGcp } from "./cloud-other.mjs";
 import { feedKeys, verifyDoc } from "./feedsig.mjs";
 import { changedPaths, git, normalizeRemote, repoDetails } from "./git.mjs";
-import { redact, validPattern } from "./redact.mjs";
+import { redact, redactBranch, ruleHits, validPattern } from "./redact.mjs";
 import { gapText, SERVICE_MAP_VERSION, setServiceMap } from "./services.mjs";
 
 const HELP = `pharon ${cfg.VERSION}: the warning light for your stack
@@ -35,7 +35,8 @@ Usage:
                                     Record a service you confirmed (used by /pharon:setup)
   pharon services remove <vendor> | pharon services list
   pharon redact add <glob> [--hash] | remove <glob> | list
-                                    Drop (or hash) matching names/paths before upload
+                                    Drop (or hash) matching names/paths before upload; a matching
+                                    branch is hashed, a matching git remote is replaced by --name
 
 Only an inventory (component names, versions, file paths) ever leaves this machine. Never code, never secret values.`;
 
@@ -103,13 +104,17 @@ function buildInventory(ctx, contents, fp, trigger) {
   for (const c of components)
     if (c.type === "container_image" && /^\d{12}\.dkr\.ecr\./.test(c.name))
       c.name = salt ? c.name.replace(/^(\d{12})/, (id) => accountRef(id, salt)) : c.name.replace(/^\d{12}/, "acct-unknown");
+  const rules = effectiveRules(ctx.link);
+  // A git remote that a rule matches is never uploaded (link() asks for --name instead). A linked project keeps its id.
+  const idHit = ctx.repoId && ruleHits(ctx.repoId, rules);
+  if (idHit && ctx.link) warnings.push(`A redaction rule matches this project's repo id (${ctx.repoId}), which every upload carries. Re-link under another name: pharon link --name <project-name>`);
   return {
     inventory: {
       schema_version: "1.0",
       generated_at: new Date().toISOString(),
       generator: { name: "pharon-cli", version: cfg.VERSION, trigger },
-      repo: { id: ctx.repoId ?? "unlinked", branch: ctx.branch, default_branch: d.default_branch, commit_sha: d.commit_sha, commit_time: d.commit_time, dirty, pushed: d.pushed, fingerprint: fp },
-      components: redact(components, effectiveRules(ctx.link), ctx.link?.redaction?.salt),
+      repo: { id: (idHit && !ctx.link ? null : ctx.repoId) ?? "unlinked", branch: redactBranch(ctx.branch, rules, salt), default_branch: redactBranch(d.default_branch, rules, salt), commit_sha: d.commit_sha, commit_time: d.commit_time, dirty, pushed: d.pushed, fingerprint: fp },
+      components: redact(components, rules, salt),
       gaps: [
         // Manual entries live on the server (they're matched there); here they only tell us which gaps are filled.
         ...detectGaps([...components, ...(ctx.link?.manual ?? []).map((m) => ({ type: "cloud_resource", ...m }))], [...contents.keys()], envNames, new Set(scans.filter((c) => c.observed_at).map((c) => CLOUD_KINDS[c.kind].gap))).map((g) => ({ ...g, status: gapStatus(g, ctx.link) })),
@@ -302,7 +307,7 @@ function printNotices(ctx) {
 const HEARTBEAT_EVERY_MS = 3600e3;
 async function heartbeat(ctx, fp, { force = false } = {}) {
   if (!force && Date.now() - (cfg.readState(ctx.key, ctx.branch).heartbeat_at ?? 0) < HEARTBEAT_EVERY_MS) return;
-  await cfg.api("/v1/heartbeats", { method: "POST", body: { project_id: ctx.link.project_id, branch: ctx.branch, fingerprint: fp }, timeoutMs: 8000 });
+  await cfg.api("/v1/heartbeats", { method: "POST", body: { project_id: ctx.link.project_id, branch: redactBranch(ctx.branch, effectiveRules(ctx.link), ctx.link.redaction?.salt), fingerprint: fp }, timeoutMs: 8000 });
   cfg.saveState(ctx.key, ctx.branch, { heartbeat_at: Date.now() });
 }
 
@@ -512,8 +517,11 @@ async function login() {
 async function link() {
   const ctx = context();
   const slug = (s) => s.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-|-$/g, "");
-  const repoId = ctx.key.startsWith("path:") ? (opt.name ? `local/${slug(opt.name)}` : ctx.link?.repo_id) : ctx.key;
-  if (!repoId) fail("This repo has no git remote. Run `pharon link --name <project-name>`.");
+  const noRemote = ctx.key.startsWith("path:");
+  // A remote that a redaction rule matches never leaves the machine: the project is named instead, like a repo without one.
+  const hidden = noRemote || ruleHits(ctx.key, effectiveRules(ctx.link));
+  const repoId = !hidden ? ctx.key : opt.name ? `local/${slug(opt.name)}` : ctx.link?.repo_id?.startsWith("local/") ? ctx.link.repo_id : null;
+  if (!repoId) fail(noRemote ? "This repo has no git remote. Run `pharon link --name <project-name>`." : "A redaction rule matches this repo's git remote, so it won't be uploaded. Run `pharon link --name <project-name>`.");
   const res = await cfg.api("/v1/projects/link", { method: "POST", body: { repo_id: repoId, name: opt.name, org_id: opt.org } });
   const same = ctx.link?.project_id === res.project_id; // re-linking the same project keeps local choices (cloud profiles…)
   cfg.saveLink(ctx.key, (ctx.link = { ...(same ? ctx.link : {}), repo_id: repoId, project_id: res.project_id, name: res.name, org_id: res.org_id, org_name: res.org_name, confirmed: same && !!ctx.link?.confirmed, linked_at: new Date().toISOString() }));
@@ -686,7 +694,8 @@ async function ciInventory(info, facts) {
   const contents = readStack(facts.root, listStackFiles(facts.root));
   const { inventory } = buildInventory(ctx, contents, fingerprint(contents), `ci:${process.env.GITHUB_EVENT_NAME ?? "run"}`);
   // CI checkouts are detached and fresh: the commit is on the remote and nothing is uncommitted.
-  inventory.repo = { ...inventory.repo, branch: facts.branch, default_branch: facts.default_branch, commit_sha: facts.commit_sha, commit_time: facts.commit_time, dirty: false, pushed: true };
+  const [rules, salt] = [effectiveRules(ctx.link), info.redaction?.salt];
+  inventory.repo = { ...inventory.repo, branch: redactBranch(facts.branch, rules, salt), default_branch: redactBranch(facts.default_branch, rules, salt), commit_sha: facts.commit_sha, commit_time: facts.commit_time, dirty: false, pushed: true };
   return inventory;
 }
 

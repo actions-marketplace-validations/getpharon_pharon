@@ -46,7 +46,7 @@ jobs:
 
 ## What leaves your machine
 
-Only an inventory: component names, versions and the paths of stack files. Source code, file contents and secret values never do, and `/pharon:show` prints the exact upload. Redaction rules can drop or hash internal names first. Every incident notice is signed with Ed25519; the CLI rejects unsigned or tampered notices and never runs anything from one. Details: [what we see](https://getpharon.com/what-we-see).
+Only an inventory: component names, versions and the paths of stack files. Source code, file contents and secret values never do, and `/pharon:show` prints the exact upload. Redaction rules (`pharon redact add '<glob>' [--hash]`) drop or hash matching names and paths first; a matching branch name is hashed, and a matching git remote is never sent (the project gets a name you choose instead). Every incident notice is signed with Ed25519; the CLI rejects unsigned or tampered notices and never runs anything from one. Details: [what we see](https://getpharon.com/what-we-see).
 
 **Where data goes:**
 - **getpharon.com**, Pharon's API, and nowhere else. The plugin's commands and its session start and end hooks upload the inventory there, along with the repo's git remote (as the project's identity), hashed cloud account ids and the machine's name as the label of the CLI login. They download signed incident notices from the same API.

@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.6"; // keep equal to package.json and plugin.json
 export const HOME = process.env.PHARON_HOME ?? path.join(homedir(), ".pharon");
 
 const safe = (s) => String(s).replace(/[^\w.-]+/g, "_");
